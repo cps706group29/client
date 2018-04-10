@@ -1,4 +1,3 @@
-package cps706project;
 import java.io.*;
 import java.net.*;
 
@@ -24,10 +23,10 @@ public class Client {
     
     modifiedSentence = inFromServer.readLine();
     
-    System.out.println("SERVER: " + modifiedSentence);
-    
-    clientSocket.close();
+System.out.println("FROM SERVER: " + modifiedSentence);
+clientSocket.close();
     
   }
   
 }
+
