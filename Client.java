@@ -11,7 +11,7 @@ public class Client {
     String modifiedSentence;
     
     BufferedReader inFromUser = new BufferedReader(new InputStreamReader(System.in));
-    InetAddress ip = InetAddress.getByName("192.168.1.116");
+    InetAddress ip = InetAddress.getByName("127.0.0.1");
     Socket clientSocket = new Socket(ip, 40280);
     
     DataOutputStream outToServer = new DataOutputStream(clientSocket.getOutputStream());
