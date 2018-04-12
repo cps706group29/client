@@ -4,7 +4,6 @@ import java.util.*;
 import java.util.regex.*;
 import java.lang.*;
 
-
 public class Client {
   public static String  HIS_CINEMA_IP;    // Default 127.0.0.1
   public static int     HIS_CINEMA_PORT;  // Default 40280
@@ -19,14 +18,12 @@ public class Client {
     // TCP Socket for communicatin with Web-Server hisCinema.com
     InetAddress ip = InetAddress.getByName(HIS_CINEMA_IP);
     Socket clientSocket = new Socket(ip, HIS_CINEMA_PORT);
-
     PrintWriter pw = new PrintWriter(clientSocket.getOutputStream());
     BufferedReader inFromServer = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-
     System.out.println("Sending HTTP Request to hisCinema.com...");
-    System.out.println("---------------------------------------------------------------------");
+    // -----------------------------------------------------------------------------
     pw.println("GET / HTTP/1.1");
-    pw.println("Host: 127.0.0.1:40280");
+    pw.println("Host: " + HIS_CINEMA_IP + ":" + HIS_CINEMA_PORT);
     pw.println("User-Agent: Phil, Ron and Jed's Client App");
     pw.println("Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
     pw.println("Accept-Language: en-US,en;q=0.5");
@@ -34,8 +31,8 @@ public class Client {
     pw.println("Connection: keep-alive");
     pw.println("Upgrade-Insecure-Requests: 1");
     pw.println("");
+    // -----------------------------------------------------------------------------
     pw.flush();
-    System.out.println("---------------------------------------------------------------------");
     // Response Receieved - BUILD HTML RESPONSE FROM SERVER
     String message;
     String html = "";
@@ -67,6 +64,8 @@ public class Client {
       userSelection = Integer.parseInt(userInput.readLine());
     }
     String domain = getDomain(urlLinks.get(userSelection));
+    String resource = getResource(urlLinks.get(userSelection));
+    System.out.println("REQUESTED RESOURCE IS: " + resource);
     // Prepare UDP Packet to send to localDNS to resolve domain name for video
     DatagramSocket udpSocket = new DatagramSocket();
     InetAddress IPAddress = InetAddress.getByName(LOCAL_DNS_IP);
@@ -77,14 +76,55 @@ public class Client {
     sendData = requestURL.getBytes();
     // Send the DNS Query to the server, and await response
     DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, IPAddress, LOCAL_DNS_PORT);
-    System.out.println("TO SERVER: " + requestURL);
+    System.out.println("SENDING TO LOCAL-DNS:    " + requestURL);
     udpSocket.send(sendPacket);
 
     // HANDLE THE RESPONSE FROM THE SERVER
     DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
     udpSocket.receive(receivePacket);
-    String serverResponse = new String(receivePacket.getData());
-    System.out.println("FROM SERVER: " + serverResponse);
+    String HER_CDN_IP = new String(receivePacket.getData());
+    System.out.println("RECEIVED FROM LOCAL-DNS: " + HER_CDN_IP);
+
+    // TCP Socket for communicatin with Web-Server herCDN.com
+    clientSocket = new Socket(InetAddress.getByName(HER_CDN_IP), HER_CDN_PORT);
+    DataInputStream dataInput = new DataInputStream(clientSocket.getInputStream());
+    PrintWriter dataOutput = new PrintWriter(clientSocket.getOutputStream());
+    System.out.println("Sending HTTP Request to herCDN.com: " + HER_CDN_IP + ":" + HER_CDN_PORT + resource);
+    // -----------------------------------------------------------------------------
+    dataOutput.println("GET " + resource + " HTTP/1.1");
+    dataOutput.println("Host: " + HER_CDN_IP + ":" + HER_CDN_PORT);
+    dataOutput.println("User-Agent: Phil, Ron and Jed's Client App");
+    dataOutput.println("Accept: video/mp4,text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8");
+    dataOutput.println("Accept-Language: en-US,en;q=0.5");
+    dataOutput.println("Accept-Encoding: gzip, deflate");
+    dataOutput.println("Connection: keep-alive");
+    dataOutput.println("Upgrade-Insecure-Requests: 1");
+    dataOutput.println("");
+    dataOutput.flush();
+    // -----------------------------------------------------------------------------
+    // Ready to receive video file
+    try{
+      String filename = dataInput.readUTF();
+      long filesize = Long.parseLong(dataInput.readUTF());
+      System.out.println("Receiving File: " + filename + " " + (filesize/(1024*1024)) + "MB" );
+      receiveData = new byte[1024];
+      // Open a new file in the current directly and to write the transfer
+      File file = new File(System.getProperty("user.dir") + "/client-" + filename);
+      FileOutputStream fileOutputStream = new FileOutputStream(file);
+      long bytesRead;
+      do{
+        bytesRead = dataInput.read(receiveData, 0, receiveData.length);
+        fileOutputStream.write(receiveData, 0, receiveData.length);
+      }while(!(bytesRead < 1024));
+      fileOutputStream.close();
+      System.out.println("Transfer complete.");
+    }catch(EOFException e){
+      System.out.println("ERROR: " + e);
+    }
+    dataInput.close();
+    dataOutput.close();
+    clientSocket.close();
+    // ----------------------------------------------------------------------------------
     udpSocket.close();
 
     // /////////////////////////// JED's Work ////////////////////////////
@@ -108,6 +148,15 @@ public class Client {
     Matcher m = p.matcher(url);
     while(m.find()){
       return m.group(1);
+    }
+    return "";
+  }
+
+  private static String getResource(String url){
+    Pattern p = Pattern.compile("([a-zA-Z0-9]+[.]{1}[A-Za-z0-9]+[.]{1}[A-Za-z0-9]+)([/]{1}[A-Za-z0-9]+[.]{1}[A-Za-z0-9]+)");
+    Matcher m = p.matcher(url);
+    while(m.find()){
+      return m.group(2);
     }
     return "";
   }
