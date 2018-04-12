@@ -6,15 +6,15 @@ import java.lang.*;
 
 
 public class Client {
-  public static final String  HIS_CINEMA_IP =   "127.0.0.1";
-  public static final int     HIS_CINEMA_PORT = 40280;
-  public static final String  LOCAL_DNS_IP =    "127.0.0.1";
-  public static final int     LOCAL_DNS_PORT =  40281;
-
+  public static String  HIS_CINEMA_IP;    // Default 127.0.0.1
+  public static int     HIS_CINEMA_PORT;  // Default 40280
+  public static String  LOCAL_DNS_IP;     // Default 127.0.0.1
+  public static int     LOCAL_DNS_PORT;   // Default 40281
+  public static int     HER_CDN_PORT;     // Default 40284
 
   public static void main(String[] args) throws IOException {
-    String inputFilename;
-    String html = "";
+    // Set the IP/PORT constants
+    initialize();
 
     // TCP Socket for communicatin with Web-Server hisCinema.com
     InetAddress ip = InetAddress.getByName(HIS_CINEMA_IP);
@@ -38,6 +38,7 @@ public class Client {
     System.out.println("---------------------------------------------------------------------");
     // Response Receieved - BUILD HTML RESPONSE FROM SERVER
     String message;
+    String html = "";
     while((message = inFromServer.readLine()) != null){
        html += message + '\n';
     }
@@ -86,26 +87,14 @@ public class Client {
     System.out.println("FROM SERVER: " + serverResponse);
     udpSocket.close();
 
-
-
-
-
-
     // /////////////////////////// JED's Work ////////////////////////////
     // AppFrame f = new AppFrame(urlLinks);
     // f.setVisible(true);
 
   }
 
-  public static void printH(String test){
-    System.out.println(test);
-  }
-
-
   private static ArrayList<String> parseHTML(String html){
-
     ArrayList<String> links = new ArrayList<String>();
-
     Pattern p = Pattern.compile("<a[^>]+href=[\"']?([^>\"']*)[\"']?[^>]*>(.+?)</a>");
     Matcher m = p.matcher(html);
     while (m.find()) {
@@ -123,5 +112,104 @@ public class Client {
     return "";
   }
 
+  private static void initialize(){
+    // INITIALIZES THE FOLLWING CONSTANTS
+    // HIS_CINEMA_IP;    // Default 127.0.0.1
+    // HIS_CINEMA_PORT;  // Default 40280
+    // LOCAL_DNS_IP;     // Default 127.0.0.1
+    // LOCAL_DNS_PORT;   // Default 40281
+    // HER_CDN_PORT;     // Default 40284
+    // Set the IP/PORT constants
+    Scanner scanner = new Scanner(System.in);
+    String line;
+    // LOCAL_DNS_IP --------------------------------------------------------------------------
+    System.out.println("Enter IP of Local DNS (or press 'Enter' for 127.0.0.1)");
+    line = scanner.nextLine();
+    if(line.isEmpty()){
+      System.out.println("Using 127.0.0.1");
+      line = "127.0.0.1";
+    }
+    while(!checkIP(line)){
+      System.out.println("[Error] Invalid IP, try again!");
+      System.out.println("Enter IP of Local DNS (or press 'Enter' for 127.0.0.1)");
+      line = scanner.nextLine();
+    }
+    LOCAL_DNS_IP = line;
+    // LOCAL_DNS_PORT --------------------------------------------------------------------------
+    System.out.println("Enter PORT of Local DNS (or press 'Enter' for 40281)");
+    line = scanner.nextLine();
+    if(line.isEmpty()){
+      System.out.println("Using 40281");
+      line = "40281";
+    }
+    while(!checkPORT(line)){
+      System.out.println("[Error] Invalid PORT, try again!");
+      System.out.println("Enter PORT of Local DNS (or press 'Enter' for 40281)");
+      line = scanner.nextLine();
+    }
+    LOCAL_DNS_PORT = Integer.parseInt(line);
+    // HIS_CINEMA_IP --------------------------------------------------------------------------
+    System.out.println("Enter IP of hisCinema.com Web Server (or press 'Enter' for 127.0.0.1)");
+    line = scanner.nextLine();
+    if(line.isEmpty()){
+      System.out.println("Using 127.0.0.1");
+      line = "127.0.0.1";
+    }
+    while(!checkIP(line)){
+      System.out.println("[Error] Invalid IP, try again!");
+      System.out.println("Enter IP of hisCinema.com Web Server (or press 'Enter' for 127.0.0.1)");
+      line = scanner.nextLine();
+    }
+    HIS_CINEMA_IP = line;
+    // HIS_CINEMA_PORT --------------------------------------------------------------------------
+    System.out.println("Enter PORT of hisCinema.com Web Server (or press 'Enter' for 40280)");
+    line = scanner.nextLine();
+    if(line.isEmpty()){
+      System.out.println("Using 40280");
+      line = "40280";
+    }
+    while(!checkPORT(line)){
+      System.out.println("[Error] Invalid PORT, try again!");
+      System.out.println("Enter PORT of hisCinema.com Web Server (or press 'Enter' for 40280)");
+      line = scanner.nextLine();
+    }
+    HIS_CINEMA_PORT = Integer.parseInt(line);
+    // HER_CDN_PORT --------------------------------------------------------------------------
+    System.out.println("Enter PORT of HerCDN (or press 'Enter' for 40284)");
+    line = scanner.nextLine();
+    if(line.isEmpty()){
+      System.out.println("Using 40284");
+      line = "40284";
+    }
+    while(!checkPORT(line)){
+      System.out.println("[Error] Invalid PORT, try again!");
+      System.out.println("Enter PORT of HerCDN (or press 'Enter' for 40284)");
+      line = scanner.nextLine();
+    }
+    HER_CDN_PORT = Integer.parseInt(line);
+    // --------------------------------------------------------------------------
+    System.out.println("[LocalDNS]  " + LOCAL_DNS_IP + ":" + LOCAL_DNS_PORT);
+    System.out.println("[HisCinema] " + HIS_CINEMA_IP + ":" + HIS_CINEMA_PORT);
+    System.out.println("[HerCDN]    xxx.xxx.xxx.xxx:" + HER_CDN_PORT);
+    return;
+  }
+
+  private static boolean checkIP(String input){
+    Pattern p = Pattern.compile("([0-9]+[.]){3}[0-9]{1}");
+    Matcher m = p.matcher(input);
+    if(m.find()){
+      return true;
+    }
+    return false;
+  }
+
+  private static boolean checkPORT(String input){
+    Pattern p = Pattern.compile("[0-9]+");
+    Matcher m = p.matcher(input);
+    if(m.find()){
+      return true;
+    }
+    return false;
+  }
 
 }
